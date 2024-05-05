@@ -5,10 +5,13 @@ from typing import Dict
 from polymetis import RobotInterface
 
 
-TIME = 10
+TIME = 20
 HZ = 30
 HOMES = {
+    "temp": [-1.8403,  1.1535,  1.3074, -2.2518,  1.8556,  2.8206,  2.1401],
+    "limb": [-1.7047,  1.4508,  0.8429, -1.5932,  1.1936,  2.6213,  1.3207],
     "pour": [0.1828, -0.4909, -0.0093, -2.4412, 0.2554, 3.3310, 0.5905],
+    "cloth": [1.78, -0.4909, -0.0093, -2.4412, 0.2554, 3.3310, -0.9803],
     "scoop": [0.1828, -0.4909, -0.0093, -2.4412, 0.2554, 3.3310, 0.5905],
     "zip": [-0.1337, 0.3634, -0.1395, -2.3153, 0.1478, 2.7733, -1.1784],
     "insertion": [0.1828, -0.4909, -0.0093, -2.4412, 0.2554, 3.3310, 0.5905],
@@ -71,7 +74,7 @@ class Rate:
         self._last = time.time()
 
 
-def robot_setup(home_pos, gain_type, franka_ip="172.16.0.1"):
+def robot_setup(home_pos, gain_type, franka_ip="192.168.2.121"):
     # Initialize robot interface and reset
     robot = RobotInterface(ip_address=franka_ip)
     robot.set_home_pose(torch.Tensor(home_pos))
