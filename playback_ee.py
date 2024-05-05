@@ -16,6 +16,8 @@ import glob
 import numpy as np
 from franka_env import FrankaEnv
 
+from util import quat_mult, quat_conj, quat_rot, HOMES
+
 import torchcontrol as toco
 
 parser = argparse.ArgumentParser()
@@ -108,7 +110,12 @@ if __name__ == "__main__":
 
     data = np.load("data/" + args.file)
     home, traj_pose, traj_quat, hz = data["home"], data["traj_pose"], data["traj_quat"], data["hz"]
-    env = FrankaEnv(home=home, hz=hz, gain_type=gain_type, camera=False)
+    env = FrankaEnv(home=HOMES["cloth"], hz=hz, gain_type=gain_type, camera=False)
+
+    ee_pos_home, ee_quat_home = env.robot.robot_model.forward_kinematics(env.robot.get_joint_positions())
+    print("Home pose: ", ee_pos_home)
+    print("Home quat: ", ee_quat_home)
+    ee_quat_home_conj = quat_conj(ee_quat_home)
 
     joint_vel_limits = env.robot.robot_model.get_joint_velocity_limits()
     print("----------------------------------------------------")
@@ -152,9 +159,9 @@ if __name__ == "__main__":
         for i in range(len(traj_pose)):
             print("Traj pose: ", traj_pose[i])
             print("Traj quat: ", traj_quat[i])
-            ee_pos_desired = traj_pose[i]
-            ee_quat_desired = traj_quat[i]
-            env.robot.update_current_policy({"ee_pos_desired": torch.from_numpy(ee_pos_desired), "ee_quat_desired": torch.from_numpy(ee_quat_desired)})
+            ee_pos_desired = ee_pos_home + traj_pose[i] 
+            ee_quat_desired = quat_mult(torch.from_numpy(traj_quat[i]), ee_quat_home)
+            env.robot.update_current_policy({"ee_pos_desired": ee_pos_desired, "ee_quat_desired": ee_quat_desired})
             # print(f"Desired position: {ee_pos_desired}")
             print("Current robot pose : %s", env.robot.get_ee_pose()[0])
             time.sleep(1 / hz)
