@@ -5,6 +5,7 @@ import argparse
 import glob
 import numpy as np
 import yaml
+time.sleep
 
 from franka_env import FrankaEnv
 from util import Rate, TIME, HZ, HOMES
@@ -12,7 +13,7 @@ from util import Rate, TIME, HZ, HOMES
 
 parser = argparse.ArgumentParser()
 parser.add_argument("name")
-parser.add_argument("--task", type=str, default="pour")
+parser.add_argument("--task", type=str, default="cloth")
 
 
 def _get_filename(dir, input, task):
@@ -42,13 +43,16 @@ if __name__ == "__main__":
 
         print("Started recording ...")
 
-        joints = []
+        ee_pos = []
+        ee_quat = []
         for state in range(int(TIME * HZ) - 1):
-            joints.append(env.step(None)[0]["q"])
+            ee_pos.append(env.robot.get_ee_pose()[0])
+            ee_quat.append(env.robot.get_ee_pose()[1])
+            time.sleep(1 / HZ)
         env.close()
 
         print("Recording complete.")
 
         if not os.path.exists("./data"):
             os.mkdir("data")
-        np.savez(filename, home=home, hz=HZ, traj=joints)
+        np.savez(filename, home=home, hz=HZ, traj_pose=ee_pos, traj_quat=ee_quat)
