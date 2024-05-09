@@ -45,6 +45,9 @@ if __name__ == "__main__":
 
         user_in = "r"
         while user_in == "r":
+            time.sleep(5)
+            print("Current eef pose : ", env.robot.get_ee_pose())
+            # env.robot.robot_model.urdf_path
             env.reset()
             user_in = input("Press [ENTER] to record {}".format(filename))
 
@@ -57,9 +60,9 @@ if __name__ == "__main__":
         for state in range(int(TIME * HZ) - 1):
             ee_pos.append(env.robot.get_ee_pose()[0])
             ee_quat.append(env.robot.get_ee_pose()[1])
-            ee_pose_rel.append(env.robot.get_ee_pose()[0] - ee_pos_home)
+            ee_pose_rel.append(quat_rot((env.robot.get_ee_pose()[0] - ee_pos_home), ee_quat_home))
             ee_quat_rel.append(quat_mult(env.robot.get_ee_pose()[1], ee_quat_home_conj))
-            print("Current relative pose: ", ee_pose_rel[-1], ee_quat_home)
+            print("Current relative pose: ", ee_pose_rel[-1])
             print("Current relative orientation: ", ee_quat_rel[-1])
             print("----------------------------------------------------")
             time.sleep(1 / HZ)

@@ -158,12 +158,12 @@ if __name__ == "__main__":
         hz = 30  # update frequency
         for i in range(len(traj_pose)):
             print("Traj pose: ", traj_pose[i])
-            print("Traj quat: ", traj_quat[i])
-            ee_pos_desired = ee_pos_home + traj_pose[i] 
+            # print("Traj quat: ", traj_quat[i])
+            ee_pos_desired = ee_pos_home + quat_rot(torch.from_numpy(traj_pose[i]), ee_quat_home_conj) 
             ee_quat_desired = quat_mult(torch.from_numpy(traj_quat[i]), ee_quat_home)
             env.robot.update_current_policy({"ee_pos_desired": ee_pos_desired, "ee_quat_desired": ee_quat_desired})
             # print(f"Desired position: {ee_pos_desired}")
-            print("Current robot pose : %s", env.robot.get_ee_pose()[0])
+            # print("Current robot pose : %s", env.robot.get_ee_pose()[0])
             time.sleep(1 / hz)
 
         print("Terminating PD policy...")
