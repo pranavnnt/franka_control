@@ -35,24 +35,27 @@ if __name__ == "__main__":
     home = HOMES[task]
     env = FrankaEnv(home=home, hz=HZ, gain_type="record", camera=False)
 
-    ee_pos_home, ee_rot_home = env.robot.robot_model.forward_kinematics(env.robot.get_joint_positions())
-    ee_quat_home = R.from_quat(ee_rot_home)
-    print("Home pos: ", ee_pos_home)
-    print("Home rot: ", ee_rot_home)
-
-    #home eef frame
-    T_home = T.from_rot_xyz(
-                    rotation=R.from_quat(ee_rot_home),
-                    translation=ee_pos_home)
-
     while True:
         filename = _get_filename("data", name, task)
 
         user_in = "r"
         while user_in == "r":
-            # time.sleep(5)
-            print("Current eef pose : ", env.robot.get_ee_pose())
-            # env.robot.robot_model.urdf_path
+            print("Going to start recording {}".format(filename))
+            env.reset()
+            user_in = input("Move to the initial pose and press [ENTER].")
+
+        ee_pos_init, ee_rot_init = env.robot.get_ee_pose()
+        ee_quat_init = R.from_quat(ee_rot_init)
+        print("Home pos: ", ee_pos_init)
+        print("Home rot: ", ee_rot_init)
+
+        #home eef frame
+        T_home = T.from_rot_xyz(
+                        rotation=R.from_quat(ee_rot_init),
+                        translation=ee_pos_init)
+
+        user_in = "r"
+        while user_in == "r":
             env.reset()
             user_in = input("Press [ENTER] to record {}".format(filename))
 

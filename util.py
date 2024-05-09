@@ -80,7 +80,7 @@ def robot_setup(home_pos, gain_type, franka_ip="192.168.2.121"):
     # Initialize robot interface and reset
     robot = RobotInterface(ip_address=franka_ip, use_grav_comp=False)
     robot.set_home_pose(torch.Tensor(home_pos))
-    robot.go_home()
+    # robot.go_home()
 
     # Create and send PD Controller to Franka
     q_initial = robot.get_joint_positions()
