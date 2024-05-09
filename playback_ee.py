@@ -17,6 +17,7 @@ import numpy as np
 from franka_env import FrankaEnv
 
 from util import quat_mult, quat_conj, quat_rot, HOMES
+from util import R, T
 
 import torchcontrol as toco
 
@@ -108,14 +109,19 @@ if __name__ == "__main__":
         "stiff" if name.endswith("insertion") or name.endswith("zip") else "default"
     )
 
-    data = np.load("data/" + args.file)
-    home, traj_pos, traj_rot, hz = data["home"], data["traj_pos"], data["traj_rot"], data["hz"]
-    env = FrankaEnv(home=HOMES["cloth"], hz=hz, gain_type=gain_type, camera=False)
+    data = np.load("data/" + args.file, allow_pickle=True)
+    home, rel_pose_hist, hz = data["home"], data["traj_pose"], data["hz"]
+    env = FrankaEnv(home=HOMES["temp"], hz=hz, gain_type=gain_type, camera=False)
 
     ee_pos_home, ee_rot_home = env.robot.robot_model.forward_kinematics(env.robot.get_joint_positions())
     print("Home pos: ", ee_pos_home)
     print("Home rot: ", ee_rot_home)
     ee_rot_home_conj = quat_conj(ee_rot_home)
+
+    #home eef frame
+    T_home = T.from_rot_xyz(
+                    rotation=R.from_quat(ee_rot_home),
+                    translation=ee_pos_home)
 
     joint_vel_limits = env.robot.robot_model.get_joint_velocity_limits()
     print("----------------------------------------------------")
@@ -156,12 +162,11 @@ if __name__ == "__main__":
         m = 0.07  # magnitude of sine wave (rad)
         # T = 0.5  # period of sine wave
         hz = 30  # update frequency
-        for i in range(len(traj_pos)):
-            print("Traj pos: ", traj_pos[i])
-            # print("Traj rot: ", traj_rot[i])
-            ee_pos_desired = ee_pos_home + quat_rot(torch.from_numpy(traj_pos[i]), ee_rot_home_conj) 
-            ee_rot_desired = quat_mult(torch.from_numpy(traj_rot[i]), ee_rot_home)
-            env.robot.update_current_policy({"ee_pos_desired": ee_pos_desired, "ee_rot_desired": ee_rot_desired})
+        for i in range(len(rel_pose_hist)):
+            T_frame = T_home * rel_pose_hist[i] 
+            print("Translation: ", T_frame.translation())
+            print("Rotation: ", T_frame.rotation().as_quat())
+            env.robot.update_current_policy({"ee_pos_desired": T_frame.translation(), "ee_rot_desired": T_frame.rotation().as_quat()})
             # print(f"Desired position: {ee_pos_desired}")
             # print("Current robot pos : %s", env.robot.get_ee_pos()[0])
             time.sleep(1 / hz)
