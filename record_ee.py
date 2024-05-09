@@ -10,7 +10,6 @@ time.sleep
 
 from franka_env import FrankaEnv
 from util import Rate, TIME, HZ, HOMES
-from util import quat_conj, quat_mult, quat_rot
 from util import T, R
 
 
@@ -45,8 +44,6 @@ if __name__ == "__main__":
     T_home = T.from_rot_xyz(
                     rotation=R.from_quat(ee_rot_home),
                     translation=ee_pos_home)
-
-    ee_rot_home_conj = quat_conj(ee_rot_home)
 
     while True:
         filename = _get_filename("data", name, task)

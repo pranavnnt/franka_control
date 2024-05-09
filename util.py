@@ -4,6 +4,8 @@ import torchcontrol as toco
 from typing import Dict
 from polymetis import RobotInterface
 
+from torchcontrol.transform import Rotation as R
+from torchcontrol.transform import Transformation as T
 
 TIME = 20
 HZ = 30
@@ -17,7 +19,7 @@ HOMES = {
     "insertion": [0.1828, -0.4909, -0.0093, -2.4412, 0.2554, 3.3310, 0.5905],
 }
 KQ_GAINS = {
-    "record": [1, 1, 1, 1, 0.3, 0.3, 0.3],
+    "record": [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
     "default": [26.6667, 40.0000, 33.3333, 33.3333, 23.3333, 16.6667, 6.6667],
     "stiff": [240.0, 360.0, 300.0, 300.0, 210.0, 150.0, 60.0],
 }
@@ -87,38 +89,3 @@ def robot_setup(home_pos, gain_type, franka_ip="192.168.2.121"):
     pd_control = PDControl(joint_pos_current=q_initial, kq=kq, kqd=kqd)
     robot.send_torch_policy(pd_control, blocking=False)
     return robot, pd_control
-
-def quat_mult(q1, q2):
-    x1, y1, z1, w1 = q1
-    x2, y2, z2, w2 = q2
-    w = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2
-    x = w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2
-    y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
-    z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
-
-    q = torch.Tensor([x, y, z, w])
-    return q / torch.norm(q)
-
-def quat_conj(q):
-    return torch.Tensor([-q[0], -q[1], -q[2], q[3]])
-
-def quat_rot(point, quat):
-    # Ensure the quat is normalized
-    quat_norm = torch.norm(quat)
-    quat = quat / quat_norm
-    
-    # Extract the scalar and vector parts of the quat
-    q0, q = quat[3], quat[0:3]
-    
-    rotation_matrix = np.array([
-        [1 - 2*q[1]**2 - 2*q[2]**2, 2*q[0]*q[1] - 2*q[2]*q0, 2*q[0]*q[2] + 2*q[1]*q0],
-        [2*q[0]*q[1] + 2*q[2]*q0, 1 - 2*q[0]**2 - 2*q[2]**2, 2*q[1]*q[2] - 2*q[0]*q0],
-        [2*q[0]*q[2] - 2*q[1]*q0, 2*q[1]*q[2] + 2*q[0]*q0, 1 - 2*q[0]**2 - 2*q[1]**2]
-    ])
-
-    # Rotate the point using the rotation matrix
-    rotated_point = np.dot(rotation_matrix, np.asarray(point))
-
-    return torch.from_numpy(rotated_point)
-    
-    return rotated_point
