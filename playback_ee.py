@@ -110,7 +110,7 @@ if __name__ == "__main__":
     )
 
     data = np.load("data/" + args.file, allow_pickle=True)
-    home, rel_pose_hist, hz = data["home"], data["traj_pose"], data["hz"]
+    rel_pose_hist, hz = data["traj_pose"], data["hz"]
     env = FrankaEnv(home=HOMES["cloth"], hz=hz, gain_type=gain_type, camera=False)
 
     ee_pos_home, ee_rot_home = env.robot.robot_model.forward_kinematics(env.robot.get_joint_positions())
@@ -121,11 +121,6 @@ if __name__ == "__main__":
     T_home = T.from_rot_xyz(
                     rotation=R.from_quat(ee_rot_home),
                     translation=ee_pos_home)
-
-    joint_vel_limits = env.robot.robot_model.get_joint_velocity_limits()
-    print("----------------------------------------------------")
-    print("Joint velocity limits: ", joint_vel_limits)
-    print("----------------------------------------------------")
 
     for i in range(i, num_files):
         data = np.load("data/{}_{}.npz".format(name, i))

@@ -83,4 +83,4 @@ if __name__ == "__main__":
 
         if not os.path.exists("./data"):
             os.mkdir("data")
-        np.savez(filename, home=home, hz=HZ, traj_pose=rel_pose_hist)
+        np.savez(filename, hz=HZ, traj_pose=rel_pose_hist)
