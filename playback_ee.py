@@ -28,7 +28,7 @@ class MyPDPolicy(toco.PolicyModule):
     Custom policy that performs PD control around a desired joint position
     """
 
-    def __init__(self, ee_pos_current, ee_quat_current, kx, kxd, robot_model, **kwargs):
+    def __init__(self, ee_pos_current, ee_rot_current, kx, kxd, robot_model, **kwargs):
         """
         Args:
             joint_pos_current (torch.Tensor):   Joint positions at initialization
@@ -42,7 +42,7 @@ class MyPDPolicy(toco.PolicyModule):
         )
 
         self.ee_pos_desired = torch.nn.Parameter(ee_pos_current)
-        self.ee_quat_desired = torch.nn.Parameter(ee_quat_current)
+        self.ee_rot_desired = torch.nn.Parameter(ee_rot_current)
 
         # Initialize modules
         self.feedback = toco.modules.CartesianSpacePDFast(kx, kxd)
@@ -54,7 +54,7 @@ class MyPDPolicy(toco.PolicyModule):
         joint_vel_current = state_dict["joint_velocities"]
 
         # Control logic
-        ee_pos_current, ee_quat_current = self.robot_model.forward_kinematics(
+        ee_pos_current, ee_rot_current = self.robot_model.forward_kinematics(
             joint_pos_current
         )
         jacobian = self.robot_model.compute_jacobian(joint_pos_current)
@@ -62,8 +62,8 @@ class MyPDPolicy(toco.PolicyModule):
 
         # Execute PD control
         wrench_feedback = self.feedback(
-            ee_pos_current, ee_quat_current, ee_twist_current,
-            self.ee_pos_desired, self.ee_quat_desired, torch.zeros(6),
+            ee_pos_current, ee_rot_current, ee_twist_current,
+            self.ee_pos_desired, self.ee_rot_desired, torch.zeros(6),
         )
 
         torque_feedback = jacobian.T @ wrench_feedback
@@ -109,13 +109,13 @@ if __name__ == "__main__":
     )
 
     data = np.load("data/" + args.file)
-    home, traj_pose, traj_quat, hz = data["home"], data["traj_pose"], data["traj_quat"], data["hz"]
+    home, traj_pos, traj_rot, hz = data["home"], data["traj_pos"], data["traj_rot"], data["hz"]
     env = FrankaEnv(home=HOMES["cloth"], hz=hz, gain_type=gain_type, camera=False)
 
-    ee_pos_home, ee_quat_home = env.robot.robot_model.forward_kinematics(env.robot.get_joint_positions())
-    print("Home pose: ", ee_pos_home)
-    print("Home quat: ", ee_quat_home)
-    ee_quat_home_conj = quat_conj(ee_quat_home)
+    ee_pos_home, ee_rot_home = env.robot.robot_model.forward_kinematics(env.robot.get_joint_positions())
+    print("Home pos: ", ee_pos_home)
+    print("Home rot: ", ee_rot_home)
+    ee_rot_home_conj = quat_conj(ee_rot_home)
 
     joint_vel_limits = env.robot.robot_model.get_joint_velocity_limits()
     print("----------------------------------------------------")
@@ -132,12 +132,12 @@ if __name__ == "__main__":
         actions = []
 
         # Create policy instance
-        ee_pos_initial, ee_quat_initial = env.robot.robot_model.forward_kinematics(env.robot.get_joint_positions())
+        ee_pos_initial, ee_rot_initial = env.robot.robot_model.forward_kinematics(env.robot.get_joint_positions())
         default_kx = torch.Tensor(env.robot.metadata.default_Kx)
         default_kxd = torch.Tensor(env.robot.metadata.default_Kxd)
         policy = MyPDPolicy(
             ee_pos_current=ee_pos_initial,
-            ee_quat_current=ee_quat_initial,
+            ee_rot_current=ee_rot_initial,
             kx=default_kx,
             kxd=default_kxd,
             robot_model=env.robot.robot_model,
@@ -150,20 +150,20 @@ if __name__ == "__main__":
         # Update policy to execute a sine trajectory on joint 6 for 5 seconds
         print("Starting playback updates...")
         # ee_pos_desired = ee_pos_initial.clone()
-        # ee_quat_desired = ee_quat_initial.clone()
+        # ee_rot_desired = ee_rot_initial.clone()
 
         time_to_go = 50.0
         m = 0.07  # magnitude of sine wave (rad)
         # T = 0.5  # period of sine wave
         hz = 30  # update frequency
-        for i in range(len(traj_pose)):
-            print("Traj pose: ", traj_pose[i])
-            # print("Traj quat: ", traj_quat[i])
-            ee_pos_desired = ee_pos_home + quat_rot(torch.from_numpy(traj_pose[i]), ee_quat_home_conj) 
-            ee_quat_desired = quat_mult(torch.from_numpy(traj_quat[i]), ee_quat_home)
-            env.robot.update_current_policy({"ee_pos_desired": ee_pos_desired, "ee_quat_desired": ee_quat_desired})
+        for i in range(len(traj_pos)):
+            print("Traj pos: ", traj_pos[i])
+            # print("Traj rot: ", traj_rot[i])
+            ee_pos_desired = ee_pos_home + quat_rot(torch.from_numpy(traj_pos[i]), ee_rot_home_conj) 
+            ee_rot_desired = quat_mult(torch.from_numpy(traj_rot[i]), ee_rot_home)
+            env.robot.update_current_policy({"ee_pos_desired": ee_pos_desired, "ee_rot_desired": ee_rot_desired})
             # print(f"Desired position: {ee_pos_desired}")
-            # print("Current robot pose : %s", env.robot.get_ee_pose()[0])
+            # print("Current robot pos : %s", env.robot.get_ee_pos()[0])
             time.sleep(1 / hz)
 
         print("Terminating PD policy...")
