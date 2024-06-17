@@ -1,8 +1,8 @@
 import torch, os
 import numpy as np
 from gym import Env, spaces
-from util import robot_setup, Rate, LOW_JOINTS, HIGH_JOINTS
-from camera import Camera
+from franka_control.util import robot_setup, Rate, LOW_JOINTS, HIGH_JOINTS
+from franka_control.camera import Camera
 from collections import OrderedDict
 
 
